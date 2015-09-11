@@ -100,7 +100,7 @@ class RequestHandler(pyjsonrpc.HttpRequestHandler):
     @pyjsonrpc.rpcmethod
     def stop(self):
         status = coms.roombaStop()
-        return 'Weeeeee!!!!!'
+        return 'Stoped'
 
     @pyjsonrpc.rpcmethod
     def closeBot(self):
