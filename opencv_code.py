@@ -61,11 +61,12 @@ class RoombaBrain(object):
 
         # set up the ROI for tracking
         x1, y1, x2, y2 = rects[0]
-        r = x2
-        c = y2
-        w = x2 - x1
-        h = y2 - y1
-        c = max(c - h,0)
+        c = x2
+        r = y1
+        h = x2 - x1
+        w = y2 - y1
+        #c = max(c - h,0)
+        self.initial_window = (c,r,w,h)
         self.track_window = (c,r,w,h)
         roi = img[r:r+h, c:c+w]
         hsv_roi =  cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
@@ -76,16 +77,27 @@ class RoombaBrain(object):
         self.term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
 
     def do_tracking(self,img,gray):
-         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-         dst = cv2.calcBackProject([hsv],[0],self.roi_hist,[0,180],1)
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        dst = cv2.calcBackProject([hsv],[0],self.roi_hist,[0,180],1)
 
-         # apply meanshift to get the new location
-         ret, self.track_window = cv2.meanShift(dst, self.track_window, self.term_crit)
+        # apply meanshift to get the new location
+        ret, self.track_window = cv2.meanShift(dst, self.track_window, self.term_crit)
 
-         # Draw it on image
-         x,y,w,h = self.track_window
-         img2 = cv2.rectangle(img, (x,y), (x+w,y+h), 255,2)
-         cv2.imshow('img2',img2)
+        # Draw it on image
+        x,y,w,h = self.track_window
+        img2 = cv2.rectangle(img, (x,y), (x+w,y+h), 255,2)
+        x,y,w,h = self.initial_window
+        img2 = cv2.rectangle(img2, (x,y), (x+w,y+h), (0,255,0),2)
+        cv2.imshow('img2',img2)
+        mean_x = x+(w/2)
+        return
+
+        #if mean_x < RIGHT_THRESHOLD:
+        #    self.control_client.right()
+        #elif mean_x > LEFT_THRESHOLD:
+        #    self.control_client.left()
+        #else:
+        #    self.control_client.straight()
 
     def handle_roomba(self):
         self.control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
