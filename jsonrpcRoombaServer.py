@@ -47,9 +47,9 @@ class SerialComs(object):
         success = ser.write(chr(137)+chr(0)+chr(200)+chr(0)+chr(0))  #Motors, speed 200, radius 0
         return 1
 
-    def roombaSpin(self):
+    def roombaStop(self):
         ser = self.ser
-        success = ser.write(chr(137)+chr(0)+chr(0)+chr(0)+chr(1))  #Motors, speed 0, special case 1 for turn counterclockwise 
+        success = ser.write(chr(137)+chr(0)+chr(1)+chr(0xff)+chr(0xff))  #Motors, speed 0, special case 1 for turn counterclockwise
 
     def closeRoomba(self):
         ser = self.ser
@@ -98,8 +98,8 @@ class RequestHandler(pyjsonrpc.HttpRequestHandler):
         return 'straight'
 
     @pyjsonrpc.rpcmethod
-    def spin(self):
-        status = coms.roombaSpin()
+    def stop(self):
+        status = coms.roombaStop()
         return 'Weeeeee!!!!!'
 
     @pyjsonrpc.rpcmethod
