@@ -2,13 +2,15 @@ import cv2
 import urllib
 import numpy as np
 import itertools
+import pyjsonrpc
+
 
 import time
 
 
 
 VIDEO_URL="http://192.168.42.1:8080/?action=stream"
-
+CONTROL_URL = "http://192.168.42.1:8081/"
 
 
 def detect(img, cascade):
@@ -35,8 +37,11 @@ def clock():
 
 
 def handle_roomba():
-    stream=urllib.urlopen(VIDEO_URL)
+    control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
 
+    control_client.slow_spin()
+
+    stream=urllib.urlopen(VIDEO_URL)
     bytes = ""
 
     for i in itertools.count(1):
@@ -54,6 +59,9 @@ def handle_roomba():
 
             if len(rects) == 0:
                 rects = detect(gray, profile_cascade)
+
+            if len(rects) > 0:
+                control_client.stop()
 
             vis = img.copy()
             draw_rects(vis, rects, (0, 255, 0))
