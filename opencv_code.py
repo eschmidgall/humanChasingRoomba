@@ -7,7 +7,12 @@ import pyjsonrpc
 
 import time
 
+X_SIZE=320
 
+THRESHOLD = 1.0/3
+
+LEFT_THRESHOLD = X_SIZE*THRESHOLD
+RIGHT_THRESHOLD = X_SIZE*(1-THRESHOLD)
 
 VIDEO_URL="http://192.168.42.1:8080/?action=stream"
 CONTROL_URL = "http://192.168.42.1:8081/"
