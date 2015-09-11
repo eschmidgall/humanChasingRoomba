@@ -10,7 +10,7 @@ class SerialComs(object):
         return 'Serial Coms '+str(a)
         
     def openRoomba(self):
-        ser = serial.Serial(0, baudrate=115200, timeout = 0.1) #Define serial port
+        ser = serial.Serial('/dev/ttyMFD1', baudrate=115200, timeout = 0.1) #Define serial port
         self.ser = ser          #Store serial port in class self
         ser.open()              #Open
         success = ser.write(chr(128))       #Roomba to serial mode
