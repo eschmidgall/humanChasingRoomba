@@ -3,7 +3,7 @@ import urllib
 import numpy as np
 import itertools
 import pyjsonrpc
-import math
+
 
 import time
 
@@ -13,8 +13,6 @@ THRESHOLD = 1.0/3
 
 LEFT_THRESHOLD = X_SIZE*THRESHOLD
 RIGHT_THRESHOLD = X_SIZE*(1-THRESHOLD)
-
-FPS = 10
 
 VIDEO_URL="http://192.168.42.1:8080/?action=stream"
 CONTROL_URL = "http://192.168.42.1:8081/"
@@ -68,38 +66,35 @@ class RoombaBrain(object):
 
         # set up the ROI for tracking
         x1, y1, x2, y2 = rects[0]
-        c = x1
+        c = x2
         r = y1
-        h = int((x2 - x1)*1.5)
-        w = int((y2 - y1)*1.5)
-        r = min(r + w,240-h)
+        h = x2 - x1
+        w = y2 - y1
+        #c = max(c - h,0)
         self.initial_window = (c,r,w,h)
         self.track_window = (c,r,w,h)
-        self.hsv_roi = gray[r:r+h, c:c+w]
-        #hsv_roi =  cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        self.kp, self.des = self.sift.detectAndCompute(self.hsv_roi,None)
+        roi = img[r:r+h, c:c+w]
+        hsv_roi =  cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
+        self.roi_hist = cv2.calcHist([hsv_roi],[0],mask,[180],[0,180])
+        cv2.normalize(self.roi_hist,self.roi_hist,0,255,cv2.NORM_MINMAX)
+        # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
+        self.term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
 
     def do_tracking(self,img,gray):
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        dst = cv2.calcBackProject([hsv],[0],self.roi_hist,[0,180],1)
 
-        kp2, des2 = self.sift.detectAndCompute(gray,None)
-        matches = self.bf.knnMatch(self.des,des2, k=2)
-
-        good = []
-        for m,n in matches:
-            if m.distance < 0.75*n.distance:
-                good.append([m])
-
-        img3 = cv2.drawMatchesKnn(self.hsv_roi,self.kp,gray,kp2,good,None,flags=2)
-        cv2.imshow('img3',img3)
-        #hsv_img =  cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        # apply meanshift to get the new location
+        ret, self.track_window = cv2.meanShift(dst, self.track_window, self.term_crit)
 
         # Draw it on image
-        #x,y,w,h = self.track_window
-        #img2 = cv2.rectangle(img, (x,y), (x+w,y+h), 255,2)
+        x,y,w,h = self.track_window
+        img2 = cv2.rectangle(img, (x,y), (x+w,y+h), 255,2)
         x,y,w,h = self.initial_window
-        img2 = cv2.rectangle(img, (x,y), (x+w,y+h), (0,255,0),2)
+        img2 = cv2.rectangle(img2, (x,y), (x+w,y+h), (0,255,0),2)
         cv2.imshow('img2',img2)
-        #mean_x = x+(w/2)
+        mean_x = x+(w/2)
         return
 
         #if mean_x < RIGHT_THRESHOLD:
@@ -113,14 +108,9 @@ class RoombaBrain(object):
         self.control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
         self.mode = self.SEARCH_FACE
 
-        self.sift = cv2.xfeatures2d.SIFT_create()
-        self.bf = cv2.BFMatcher()
-
         self.control_client.safe()
 
         self.control_client.slow_spin()
-
-        skip_frames = 0
 
         stream=urllib.urlopen(VIDEO_URL)
         bytes = ""
@@ -132,10 +122,6 @@ class RoombaBrain(object):
             if a!=-1 and b!=-1:
                 jpg = bytes[a:b+2]
                 bytes= bytes[b+2:]
-                if skip_frames > 0:
-                    skip_frames -= 1
-                    continue
-                t = clock()
                 img = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.IMREAD_COLOR)
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 gray = cv2.equalizeHist(gray)
@@ -143,20 +129,13 @@ class RoombaBrain(object):
                 if self.mode == self.SEARCH_FACE:
                     rects = self.do_face_search(img,gray)
                     if len(rects):
-                        time.sleep(2)
-                        rects = self.do_face_search(img,gray)
-                        if len(rects):
-                            self.init_tracking(img,gray,rects)
-                            self.mode = self.TRACKING
-                        else:
-                            self.control_client.slow_spin()
+                        self.init_tracking(img,gray,rects)
+                        self.mode = self.TRACKING
                 elif self.mode == self.TRACKING:
                     self.do_tracking(img,gray)
                 else:
                     print "Unknown mode:",self.mode
                     self.mode = self.SEARCH_FACE
-                dt = clock() - t
-                skip_frame = math.ceil((1 - dt) * FPS)
 
             if cv2.waitKey(1) == 27:
                 self.control_client.stop()
