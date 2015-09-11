@@ -35,43 +35,73 @@ def draw_rects(img, rects, color):
 def clock():
     return cv2.getTickCount() / cv2.getTickFrequency()
 
+class RoombaBrain(object):
+    SEARCH_FACE = 0
+    TRACKING = 1
 
-def handle_roomba():
-    control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
+    def do_face_search(self,img,gray):
+        t = clock()
+        rects = detect(gray, front_cascade)
 
-    control_client.slow_spin()
+        if len(rects) == 0:
+            rects = detect(gray, profile_cascade)
 
-    stream=urllib.urlopen(VIDEO_URL)
-    bytes = ""
+        if len(rects) > 0:
+            self.control_client.stop()
 
-    for i in itertools.count(1):
-        bytes+=stream.read(1024)
-        a = bytes.find('\xff\xd8')
-        b = bytes.find('\xff\xd9')
-        if a!=-1 and b!=-1:
-            jpg = bytes[a:b+2]
-            bytes= bytes[b+2:]
-            img = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.IMREAD_COLOR)
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            gray = cv2.equalizeHist(gray)
-            t = clock()
-            rects = detect(gray, front_cascade)
+        vis = img.copy()
+        draw_rects(vis, rects, (0, 255, 0))
+        dt = clock() - t
 
-            if len(rects) == 0:
-                rects = detect(gray, profile_cascade)
+        draw_str(vis, (20, 20), 'time: %.1f ms' % (dt*1000))
+        cv2.imshow('facedetect', vis)
+        return rects
 
-            if len(rects) > 0:
-                control_client.stop()
+    def init_tracking(self,img,gray,rects):
+        pass
 
-            vis = img.copy()
-            draw_rects(vis, rects, (0, 255, 0))
-            dt = clock() - t
+    def do_tracking(self,img,gray):
+        pass
 
-            draw_str(vis, (20, 20), 'time: %.1f ms' % (dt*1000))
-            cv2.imshow('facedetect', vis)
-        
+    def handle_roomba(self):
+        self.control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
+        self.mode = self.SEARCH_FACE
+
+        self.control_client.safe()
+
+        self.control_client.slow_spin()
+
+        stream=urllib.urlopen(VIDEO_URL)
+        bytes = ""
+
+        for i in itertools.count(1):
+            bytes+=stream.read(1024)
+            a = bytes.find('\xff\xd8')
+            b = bytes.find('\xff\xd9')
+            if a!=-1 and b!=-1:
+                jpg = bytes[a:b+2]
+                bytes= bytes[b+2:]
+                img = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.IMREAD_COLOR)
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                gray = cv2.equalizeHist(gray)
+
+                if self.mode == self.SEARCH_FACE:
+                    rects = self.do_face_search(img,gray)
+                    if len(rects):
+                        self.init_tracking(img,gray,rects)
+                        self.mode = self.TRACKING
+                elif self.mode == self.TRACKING:
+                    self.do_tracking(img,gray)
+                else:
+                    print "Unknown mode:",self.mode
+                    self.mode = self.SEARCH_FACE
+
             if cv2.waitKey(1) == 27:
                 break
 
+def main():
+    brain = RoombaBrain()
+    brain.handle_roomba()
+
 if __name__ == "__main__":
-    handle_roomba()
+    main()
