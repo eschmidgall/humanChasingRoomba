@@ -1,22 +1,24 @@
 import pyjsonrpc
 import serial
+import time
 
 class SerialComs(object):
 
-    def init(self):
-        pass
+    def __init__(self):
+        ser = serial.Serial('/dev/ttyMFD1', baudrate=115200, timeout = 0.1) #Define serial port
+        self.ser = ser          #Store serial port in class self
+        if not ser.isOpen():
+            ser.open()              #Open
 
     def echo(self,a):
         return 'Serial Coms '+str(a)
         
     def openRoomba(self):
-        ser = serial.Serial('/dev/ttyMFD1', baudrate=115200, timeout = 0.1) #Define serial port
-        self.ser = ser          #Store serial port in class self
-        ser.open()              #Open
+        ser = self.ser
         success = ser.write(chr(128))       #Roomba to serial mode
-        pause(0.1)
+        time.sleep(0.1)
         success = ser.write(chr(131))       #Roomba to safe mode
-        pause(0.1) 
+        time.sleep(0.1)
         return 1
 
     def roombaClean(self):
@@ -26,8 +28,8 @@ class SerialComs(object):
 
     def roombaSafe(self):
         ser = self.ser
-        success = ser.write(chr(131)) #Roomba to safe mode.
-        pause(0.1)
+        success = ser.write(chr(130)) #Roomba to safe mode.
+        time.sleep(0.1)
         return 1
     
     def roombaLeft(self):
@@ -69,12 +71,13 @@ class RequestHandler(pyjsonrpc.HttpRequestHandler):
     def initBot(self):
         status = coms.openRoomba()
         return 'Hi!'
-    
+
     @pyjsonrpc.rpcmethod
     def clean(self):
         status=coms.roombaClean()
         return 'clean'
 
+    @pyjsonrpc.rpcmethod
     def safe(self):
         status = coms.roombaSafe()
         return 'safe'
