@@ -133,6 +133,7 @@ class RoombaBrain(object):
                     self.mode = self.SEARCH_FACE
 
             if cv2.waitKey(1) == 27:
+                self.control_client.stop()
                 break
 
 def main():
