@@ -8,6 +8,7 @@ import pyjsonrpc
 import time
 
 X_SIZE=320
+MAX_Y=240
 
 THRESHOLD = 1.0/3
 
@@ -66,11 +67,11 @@ class RoombaBrain(object):
 
         # set up the ROI for tracking
         x1, y1, x2, y2 = rects[0]
-        c = x2
+        c = x1
         r = y1
-        h = x2 - x1
-        w = y2 - y1
-        #c = max(c - h,0)
+        h = int((x2 - x1)*1.5)
+        w = int((y2 - y1)*1.5)
+        t = min(r + 2*w,MAX_Y-w)
         self.initial_window = (c,r,w,h)
         self.track_window = (c,r,w,h)
         roi = img[r:r+h, c:c+w]
