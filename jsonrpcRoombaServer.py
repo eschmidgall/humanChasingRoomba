@@ -105,7 +105,7 @@ class RequestHandler(pyjsonrpc.HttpRequestHandler):
         return 'Bye!'
     
 coms = SerialComs()
-http_server = pyjsonrpc.ThreadingHttpServer(server_address = ('localhost',8080), RequestHandlerClass = RequestHandler)
+http_server = pyjsonrpc.ThreadingHttpServer(server_address = ('0.0.0.0',8081), RequestHandlerClass = RequestHandler)
 print "Starting http server..."
-print "URL : http://localhost:8080"
+print "URL : http://localhost:8081"
 http_server.serve_forever()
