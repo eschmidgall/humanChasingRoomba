@@ -49,7 +49,7 @@ class SerialComs(object):
 
     def roombaStop(self):
         ser = self.ser
-        success = ser.write(chr(137)+chr(0)+chr(1)+chr(0xff)+chr(0xff))  #Motors, speed 0, special case 1 for turn counterclockwise
+        success = ser.write(chr(137)+chr(0)+chr(0)+chr(0)+chr(0))  #Motors, speed 0, special case 1 for turn counterclockwise
 
     def closeRoomba(self):
         ser = self.ser
