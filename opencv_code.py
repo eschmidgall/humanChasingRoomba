@@ -3,6 +3,7 @@ import urllib
 import numpy as np
 import itertools
 import pyjsonrpc
+import math
 
 
 import time
@@ -10,6 +11,7 @@ import time
 X_SIZE=320
 MAX_X=X_SIZE
 MAX_Y=240
+FPS=10
 
 THRESHOLD = 1.0/3
 
@@ -125,6 +127,11 @@ class RoombaBrain(object):
             if a!=-1 and b!=-1:
                 jpg = bytes[a:b+2]
                 bytes= bytes[b+2:]
+                if skip_frames > 0:
+                    skip_frames -= 1
+                    print "Dropped frame"
+                    continue
+                t = clock()
                 img = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8),cv2.IMREAD_COLOR)
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 gray = cv2.equalizeHist(gray)
@@ -139,6 +146,8 @@ class RoombaBrain(object):
                 else:
                     print "Unknown mode:",self.mode
                     self.mode = self.SEARCH_FACE
+                dt = clock() - t
+                skip_frames = math.ceil((dt - 1.0/FPS)*FPS)
 
             if cv2.waitKey(1) == 27:
                 self.control_client.stop()
