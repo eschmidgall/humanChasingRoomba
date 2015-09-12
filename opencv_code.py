@@ -49,6 +49,8 @@ class RoombaBrain(object):
     PRE_TRACKING = 1
     TRACKING = 2
 
+    INITIAL_TRIES = 5
+
     WAIT_FOR_STABLE_TIME = 1.5
 
     def do_face_search(self,img,gray):
@@ -153,6 +155,9 @@ class RoombaBrain(object):
                         if len(rects):
                             self.init_tracking(img,gray,rects)
                             self.mode = self.TRACKING
+                            self.tries = self.INITIAL_TRIES
+                        elif self.tries > 0:
+                            self.tries = self.tries - 1
                         else:
                             self.control_client.slow_spin()
                             self.mode = self.SEARCH_FACE
