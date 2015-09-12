@@ -46,7 +46,10 @@ def clock():
 
 class RoombaBrain(object):
     SEARCH_FACE = 0
-    TRACKING = 1
+    PRE_TRACKING = 1
+    TRACKING = 2
+
+    WAIT_FOR_STABLE_TIME = 1.5
 
     def do_face_search(self,img,gray):
         t = clock()
@@ -120,6 +123,8 @@ class RoombaBrain(object):
         stream=urllib.urlopen(VIDEO_URL)
         bytes = ""
 
+        stablize_clock = 0
+
         for i in itertools.count(1):
             bytes+=stream.read(1024)
             a = bytes.find('\xff\xd8')
@@ -139,8 +144,17 @@ class RoombaBrain(object):
                 if self.mode == self.SEARCH_FACE:
                     rects = self.do_face_search(img,gray)
                     if len(rects):
-                        self.init_tracking(img,gray,rects)
-                        self.mode = self.TRACKING
+                        stablize_clock = clock()
+                        self.mode = self.PRE_TRACKING
+                elif self.mode == self.PRE_TRACKING:
+                    if clock() - stablize_clock >= self.WAIT_FOR_STABLE_TIME:
+                        rects = self.do_face_search(img,gray)
+                        if len(rects):
+                            self.init_tracking(img,gray,rects)
+                            self.mode = self.TRACKING
+                        else:
+                            self.control_client.slow_spin()
+                            self.mode = self.SEARCH_FACE
                 elif self.mode == self.TRACKING:
                     self.do_tracking(img,gray)
                 else:
