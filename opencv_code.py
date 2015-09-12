@@ -8,10 +8,10 @@ import math
 
 import time
 
-X_SIZE=320
+X_SIZE=640
 MAX_X=X_SIZE
-MAX_Y=240
-FPS=10
+MAX_Y=480
+FPS=11
 
 THRESHOLD = 1.0/3
 
