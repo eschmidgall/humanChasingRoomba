@@ -8,15 +8,15 @@ import math
 
 import time
 
-X_SIZE=640
-MAX_X=X_SIZE
-MAX_Y=480
+X_SIZE=320
+MAX_Y=240
+MAX_X=X_SIZE/2.0
 FPS=11
 
-THRESHOLD = 1.0/3
+THRESHOLD = 1.0/5
 
 LEFT_THRESHOLD = X_SIZE*THRESHOLD
-RIGHT_THRESHOLD = X_SIZE*(1-THRESHOLD)
+RIGHT_THRESHOLD = X_SIZE*(-THRESHOLD)
 
 VIDEO_URL="http://192.168.42.1:8080/?action=stream"
 CONTROL_URL = "http://192.168.42.1:8081/"
@@ -30,7 +30,8 @@ def detect(img, cascade):
     return rects
 
 front_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-profile_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+profile_cascade = cv2.CascadeClassifier("haarcascade_frontalface_alt.xml")
+#profile_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 
 
 def draw_str(dst, (x, y), s):
@@ -51,7 +52,7 @@ class RoombaBrain(object):
 
     INITIAL_TRIES = 5
 
-    WAIT_FOR_STABLE_TIME = 1.5
+    WAIT_FOR_STABLE_TIME = 0.2
 
     def do_face_search(self,img,gray):
         t = clock()
@@ -80,11 +81,13 @@ class RoombaBrain(object):
         w = (x2 - x1)
         delta_w = int(w * 0.5)
         c = max(0,c - int(delta_w/2))
-        w = min(c + delta_w,MAX_X-c)
+        w = min(w + delta_w,MAX_X-w)
         h = int((y2 - y1)*1.5)
         r = min(r + 2*h,MAX_Y-h)
         self.initial_window = (c,r,w,h)
         self.track_window = (c,r,w,h)
+
+        self.last_mean_x = (x1+x2)/2.0
 
         self.tracker.init(img, self.track_window)
 
@@ -97,20 +100,24 @@ class RoombaBrain(object):
         x,y,w,h = self.track_window
         print self.track_window
         img2 = cv2.rectangle(img, (int(x),int(y)), (int(x+w),int(y+h)), 255,2)
+        mean_x = x+(w/2)
         x,y,w,h = self.initial_window
-        img2 = cv2.rectangle(img2, (x,y), (x+w,y+h), (0,255,0),2)
+        img2 = cv2.rectangle(img2, (int(x),int(y)), (int(x+w),int(y+h)), (0,255,0),2)
 
         draw_str(img2, (20, 20), 'time: %.1f ms' % (dt*1000))
         cv2.imshow('img2',img2)
-        mean_x = x+(w/2)
-        return
-
-        #if mean_x < RIGHT_THRESHOLD:
-        #    self.control_client.right()
-        #elif mean_x > LEFT_THRESHOLD:
-        #    self.control_client.left()
-        #else:
-        #    self.control_client.straight()
+        delta_mean = self.last_mean_x - mean_x
+        print mean_x, self.last_mean_x, delta_mean
+        self.last_mean_x = mean_x * 0.001 +  self.last_mean_x * 0.999
+        if delta_mean < RIGHT_THRESHOLD:
+            print "Heading right"
+            self.control_client.right()
+        elif delta_mean > LEFT_THRESHOLD:
+            print "Heading left"
+            self.control_client.left()
+        else:
+            print "Heading straight"
+            self.control_client.straight()
 
     def handle_roomba(self):
         self.control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
@@ -149,13 +156,13 @@ class RoombaBrain(object):
                     if len(rects):
                         stablize_clock = clock()
                         self.mode = self.PRE_TRACKING
+                        self.tries = self.INITIAL_TRIES
                 elif self.mode == self.PRE_TRACKING:
                     if clock() - stablize_clock >= self.WAIT_FOR_STABLE_TIME:
                         rects = self.do_face_search(img,gray)
                         if len(rects):
                             self.init_tracking(img,gray,rects)
                             self.mode = self.TRACKING
-                            self.tries = self.INITIAL_TRIES
                         elif self.tries > 0:
                             self.tries = self.tries - 1
                         else:

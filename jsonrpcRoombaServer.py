@@ -1,6 +1,7 @@
 import pyjsonrpc
 import serial
 import time
+import struct
 
 class SerialComs(object):
 
@@ -34,17 +35,17 @@ class SerialComs(object):
     
     def roombaLeft(self):
         ser = self.ser
-        success = ser.write(chr(137)+chr(0)+chr(200)+chr(1)+chr(244)) #Motors, speed 200, radius 500
+        success = ser.write(chr(137)+chr(0)+chr(150)+struct.pack(">h",200)) #Motors, speed 100, radius 1000
         return 1
     
     def roombaRight(self):
         ser = self.ser
-        success = ser.write(chr(137)+chr(0)+chr(200)+chr(254)+chr(12)) #Motors, speed 200, radius -500
+        success = ser.write(chr(137)+chr(0)+chr(150)+struct.pack(">h",-200)) #Motors, speed 100, radius -1000
         return 1
 
     def roombaStraight(self):
         ser = self.ser
-        success = ser.write(chr(137)+chr(0)+chr(200)+chr(0)+chr(0))  #Motors, speed 200, radius 0
+        success = ser.write(chr(137)+chr(0)+chr(150)+chr(0)+chr(0))  #Motors, speed 100, radius 0
         return 1
 
     def roombaSpin(self):
