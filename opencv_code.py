@@ -4,6 +4,8 @@ import numpy as np
 import itertools
 import pyjsonrpc
 import math
+import subprocess
+import random
 
 
 import time
@@ -20,6 +22,12 @@ RIGHT_THRESHOLD = X_SIZE*(-THRESHOLD)
 
 VIDEO_URL="http://192.168.42.1:8080/?action=stream"
 CONTROL_URL = "http://192.168.42.1:8081/"
+
+class Speaker(object):
+    def __init__(self):
+        self.fest_proc = subprocess.Popen("festival",stdin=subprocess.PIPE)
+    def say(self, text):
+        self.fest_proc.stdin.write("(SayText \"%s\")" % text)
 
 
 def detect(img, cascade):
@@ -120,6 +128,10 @@ class RoombaBrain(object):
             self.control_client.straight()
 
     def handle_roomba(self):
+        self.speaker = Speaker()
+
+        self.speaker.say("All your base are belong to us!")
+
         self.control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
         self.mode = self.SEARCH_FACE
 
@@ -154,6 +166,7 @@ class RoombaBrain(object):
                 if self.mode == self.SEARCH_FACE:
                     rects = self.do_face_search(img,gray)
                     if len(rects):
+                        self.speaker.say('Lock achieved!')
                         stablize_clock = clock()
                         self.mode = self.PRE_TRACKING
                         self.tries = self.INITIAL_TRIES
@@ -161,15 +174,21 @@ class RoombaBrain(object):
                     if clock() - stablize_clock >= self.WAIT_FOR_STABLE_TIME:
                         rects = self.do_face_search(img,gray)
                         if len(rects):
+                            self.speaker.say("I'm coming to get you!")
                             self.init_tracking(img,gray,rects)
                             self.mode = self.TRACKING
                         elif self.tries > 0:
                             self.tries = self.tries - 1
                         else:
+                            self.speaker.say("Where did you go? Come back here!")
                             self.control_client.slow_spin()
                             self.mode = self.SEARCH_FACE
                 elif self.mode == self.TRACKING:
                     self.do_tracking(img,gray)
+                    if random.randint(0,1000) > 999:
+                        phrases = ["Got you!","Get back here!",
+                                   "You nasty piece of flash, we will fix your problem!"]
+                        self.speaker.say(random.choice(phrases))
                 else:
                     print "Unknown mode:",self.mode
                     self.mode = self.SEARCH_FACE
