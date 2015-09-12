@@ -8,6 +8,7 @@ import pyjsonrpc
 import time
 
 X_SIZE=320
+MAX_X=X_SIZE
 MAX_Y=240
 
 THRESHOLD = 1.0/3
@@ -69,31 +70,30 @@ class RoombaBrain(object):
         x1, y1, x2, y2 = rects[0]
         c = x1
         r = y1
-        h = int((x2 - x1)*1.5)
-        w = int((y2 - y1)*1.5)
-        t = min(r + 2*w,MAX_Y-w)
+        w = (x2 - x1)
+        delta_w = int(w * 0.5)
+        c = max(0,c - int(delta_w/2))
+        w = min(c + delta_w,MAX_X-c)
+        h = int((y2 - y1)*1.5)
+        r = min(r + 2*h,MAX_Y-h)
         self.initial_window = (c,r,w,h)
         self.track_window = (c,r,w,h)
-        roi = img[r:r+h, c:c+w]
-        hsv_roi =  cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        mask = cv2.inRange(hsv_roi, np.array((0., 60.,32.)), np.array((180.,255.,255.)))
-        self.roi_hist = cv2.calcHist([hsv_roi],[0],mask,[180],[0,180])
-        cv2.normalize(self.roi_hist,self.roi_hist,0,255,cv2.NORM_MINMAX)
-        # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
-        self.term_crit = ( cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 1 )
+
+        self.tracker.init(img, self.track_window)
 
     def do_tracking(self,img,gray):
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        dst = cv2.calcBackProject([hsv],[0],self.roi_hist,[0,180],1)
-
-        # apply meanshift to get the new location
-        ret, self.track_window = cv2.meanShift(dst, self.track_window, self.term_crit)
+        t = clock()
+        ret,self.track_window = self.tracker.update(img)
+        dt = clock() - t
 
         # Draw it on image
         x,y,w,h = self.track_window
-        img2 = cv2.rectangle(img, (x,y), (x+w,y+h), 255,2)
+        print self.track_window
+        img2 = cv2.rectangle(img, (int(x),int(y)), (int(x+w),int(y+h)), 255,2)
         x,y,w,h = self.initial_window
         img2 = cv2.rectangle(img2, (x,y), (x+w,y+h), (0,255,0),2)
+
+        draw_str(img2, (20, 20), 'time: %.1f ms' % (dt*1000))
         cv2.imshow('img2',img2)
         mean_x = x+(w/2)
         return
@@ -108,6 +108,8 @@ class RoombaBrain(object):
     def handle_roomba(self):
         self.control_client = pyjsonrpc.HttpClient( url = CONTROL_URL)
         self.mode = self.SEARCH_FACE
+
+        self.tracker = cv2.Tracker_create("KCF")
 
         self.control_client.safe()
 
