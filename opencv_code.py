@@ -124,6 +124,7 @@ class RoombaBrain(object):
         bytes = ""
 
         stablize_clock = 0
+        skip_frames = 0
 
         for i in itertools.count(1):
             bytes+=stream.read(1024)
