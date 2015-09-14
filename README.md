@@ -34,7 +34,7 @@ The hardware installation is relatively straight forward:
 - Connect pin 2 of the CD-4050-B chip to pin 3 of the Roomba Open Interface connector (see http://irobot.lv/uploaded_files/File/iRobot_Roomba_500_Open_Interface_Spec.pdf page 3 for pinout details)
 - Connect the USB car charger to the power and ground pins of the Roomba Open Interface (power is either pin 1 or 2, ground is pins 6,7 and casing). Make sure to get the polarity right. Doing this step wrong will cause capacitors to explode. Check the pins with a volt meter before connecting!
 - Connect the webcam to the Edison OTG port.
-- The webcam should be lifted reasonably high from the roomba in order for it to find human faces. We used a stick and some packaging material to stabilize it high enough in the air on top of the roomba. You can figure out your own creative ideas for such thing. Maybe a roomba-drone pair for coordinated air and ground attack?
+- The webcam should be lifted reasonably high from the roomba in order for it to find human faces. We used a stick and some packaging material to stabilize it high enough on top of the roomba, about 60cm above ground. This worked OK for grownups, and was extremely popular among kids. You can figure out your own creative ideas for such thing. Maybe a roomba-drone pair for coordinated air and ground attack?
 
 ##SW Installation:
 - The Edison was running Linux Yocto, version WW25.5.
