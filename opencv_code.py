@@ -6,6 +6,7 @@ import pyjsonrpc
 import math
 import subprocess
 import random
+import sys
 
 
 import time
@@ -20,8 +21,10 @@ THRESHOLD = 1.0/5
 LEFT_THRESHOLD = X_SIZE*THRESHOLD
 RIGHT_THRESHOLD = X_SIZE*(-THRESHOLD)
 
-VIDEO_URL="http://192.168.42.1:8080/?action=stream"
-CONTROL_URL = "http://192.168.42.1:8081/"
+EDISON_IP = sys.argv[1]
+
+VIDEO_URL="http://%s:8080/?action=stream" % EDISON_IP
+CONTROL_URL = "http://%s:8081/" % EDISON_IP
 
 class Speaker(object):
     def __init__(self):
