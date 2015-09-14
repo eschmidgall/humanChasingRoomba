@@ -61,10 +61,17 @@ We have had such issue delaying us for about half a day. Check the following:
 - Does your power supply work as expected? Make sure the 4050 buffer chip is getting 5V supply voltage.
 - Did you convert your Edison GPIO block to be in VSYS instead of 3.3V? Force a GPIO pin to high, and check the resulting voltage. 3.3V is bad, 4.2 and above is OK.
 - Did you attempt to use a sparkfun level converter instead of a true buffer chip? The sparkfun level converter is not good. In our experience, it outputted a voltage of 2V when the GPIO pin was pulled to low and the Roomba was connected. This might have to do with a strong pullup resistor on the Roomba side. A good buffer chip did the trick there.
+
+###Camera issues with the Edison board
+
 - The Edison board sometimes get the camera confused, try powering it completely off and on again to fix weird issues with the camera.
+- The Edison base image only includes the drivers for uvc based webcams. For older webcams, you will need to compile the relevant kernel module by rebuilding your Edison kernel. Have a look at Intel's documentation for that.
+
+###General SW issues
+
 - SW crash happens from time to time, as we pulled basically a daily checkout of the opencv project. It should restart automatically in this case.
 - Make sure you specified your Edison board IP address wherever it is listed "EDISON_IP". Also, make sure to set a password on your Edison to enable SSH ("configure_edison --password")
-- The Edison base image only includes the drivers for uvc based webcams. For older webcams, you will need to compile the relevant kernel module by rebuilding your Edison kernel. Have a look at Intel's documentation for that.
+
 
 ##Logic and design:
 
