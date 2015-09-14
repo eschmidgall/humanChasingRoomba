@@ -28,9 +28,15 @@ CONTROL_URL = "http://%s:8081/" % EDISON_IP
 
 class Speaker(object):
     def __init__(self):
-        self.fest_proc = subprocess.Popen("festival",stdin=subprocess.PIPE)
+        try:
+            self.fest_proc = subprocess.Popen("festival",stdin=subprocess.PIPE)
+        except Exception:
+            pass
     def say(self, text):
-        self.fest_proc.stdin.write("(SayText \"%s\")" % text)
+        try:
+            self.fest_proc.stdin.write("(SayText \"%s\")" % text)
+        except Exception:
+            pass
 
 
 def detect(img, cascade):
